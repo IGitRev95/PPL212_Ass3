@@ -197,7 +197,7 @@ export const parseL21SpecialForm = (op: SpecialFormKeyword, params: Sexp[]): Res
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
     op === "let" ? parseLetExp(first(params), rest(params)) :
     op === "set!" ? parseSetExp(params) : //added
-    op;
+    makeFailure("Never");
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
     isEmpty(params) ? makeFailure("define missing 2 arguments") :
