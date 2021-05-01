@@ -5,8 +5,8 @@
 import { map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
-         parseL21Exp, DefineExp, isSetExp, SetExp} from "./L21-ast";
-import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyEnvStore, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
+         parseL21Exp, DefineExp, isSetExp, SetExp, VarRef} from "./L21-ast";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, /*applyEnvStore,*/ theGlobalEnv, globalEnvAddBinding, theStore, applyStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
@@ -21,7 +21,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isStrExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
-    isVarRef(exp) ? makeFailure("applicativeEval - VarRef not suported yet - need to complete") : //continue
+    isVarRef(exp) ? evalVarRef(exp, env) : //copleted
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
@@ -50,7 +50,7 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
-    const addresses: number[] = ...
+    const addresses: number[] = []   // changed
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env)
     return evalSequence(proc.body, newEnv);
 }
@@ -69,8 +69,10 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // complete
     isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
     bind(applicativeEval(def.val, theGlobalEnv),
-            (rhs: Value) => { 
-                                extendStore(theStore,rhs)
+            (rhs: Value) => {   
+                                //console.log(theStore); //DELETE!!!!
+                                //console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
+                                extendStore(theStore,rhs);
                                 globalEnvAddBinding(def.var.var, theStore.vals.length -1);
                                 return evalSequence(exps, theGlobalEnv);
                             })   
@@ -79,7 +81,9 @@ const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // comple
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
 export const evalProgram = (program: Program): Result<Value> =>
-    evalSequence(program.exps, theGlobalEnv);
+{
+    return evalSequence(program.exps, theGlobalEnv);
+}
 
 export const evalParse = (s: string): Result<Value> =>
     bind(bind(p(s), parseL21Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv));
@@ -91,7 +95,7 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vars = map((b: Binding) => b.var.var, exp.bindings);
     
     return bind(vals, (vals: Value[]) => {
-        const addresses = ...
+        const addresses = [3] // changed
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
@@ -100,4 +104,5 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 const  evalSet = (exp: SetExp,env: Env): Result<void> => //makeFailure("evalSet is not complete") // complete? -> not Tested
     safe2((address: number, val: Value)=>makeOk(setStore(theStore,address,val)))(applyEnv(env,exp.var.var),applicativeEval(exp.val,env))
 
-
+const evalVarRef = (exp: VarRef,env: Env): Result<Value> =>
+    bind(applyEnv(env,exp.var),(address: number)=>applyStore(theStore,address))
