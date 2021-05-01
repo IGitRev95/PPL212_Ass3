@@ -5,12 +5,12 @@
 import { map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
-         parseL21Exp, DefineExp} from "./L21-ast";
+         parseL21Exp, DefineExp, isSetExp, SetExp} from "./L21-ast";
 import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyEnvStore, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
-import { Result, bind, safe2, mapResult, makeFailure, makeOk } from "../shared/result";
+import { Result, bind, safe2, mapResult, makeFailure, makeOk, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // ========================================================
@@ -21,14 +21,15 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isStrExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
-    isVarRef(exp) ? ...§ :
+    isVarRef(exp) ? makeFailure("applicativeEval - VarRef not suported yet - need to complete") : //continue
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
     isLetExp(exp) ? evalLet(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
-    exp;
+    isSetExp(exp) ? evalSet(exp,env) : // SetExp eval ADDED
+    makeFailure(`unexpected CExp: ${exp}`); 
 
 export const isTrueValue = (x: Value): boolean =>
     ! (x === false);
@@ -65,8 +66,15 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
     first;
 
-const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>
-    // complete
+const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // complete
+    isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
+    bind(applicativeEval(def.val, theGlobalEnv),
+            (rhs: Value) => { 
+                                extendStore(theStore,rhs)
+                                globalEnvAddBinding(def.var.var, theStore.vals.length -1);
+                                return evalSequence(exps, theGlobalEnv);
+                            })   
+
 
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
@@ -81,7 +89,6 @@ export const evalParse = (s: string): Result<Value> =>
 const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vals = mapResult((v: CExp) => applicativeEval(v, env), map((b: Binding) => b.val, exp.bindings));
     const vars = map((b: Binding) => b.var.var, exp.bindings);
-
     
     return bind(vals, (vals: Value[]) => {
         const addresses = ...
@@ -89,3 +96,8 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
         return evalSequence(exp.body, newEnv);
     })
 }
+
+const  evalSet = (exp: SetExp,env: Env): Result<void> => //makeFailure("evalSet is not complete") // complete? -> not Tested
+    safe2((address: number, val: Value)=>makeOk(setStore(theStore,address,val)))(applyEnv(env,exp.var.var),applicativeEval(exp.val,env))
+
+
