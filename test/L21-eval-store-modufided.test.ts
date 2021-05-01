@@ -11,44 +11,65 @@ describe('L21 Store', () => {
     const s: Store = makeEmptyStore()
     const s1 = extendStore(s, 1);
     const s2 = extendStore(s1, "a");
-
+    
+    //console.log(theStore); //DELETE!!!!
+    //console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
+    
     it('identifies the store', () => {
         expect(isStore(theStore)).to.be.true;
         expect(isStore(s)).to.be.true;
     });
+
+
 
     it('extend the store', () => {
         expect(isStore(s1)).to.be.true;
         expect(isStore(s2)).to.be.true;
     });
 
+
+
     it('apply the store', () => {
         expect(applyStore(s1, 0)).to.deep.equal(makeOk(1));
         expect(applyStore(s2, 1)).to.deep.equal(makeOk("a"));
     });
+
+
 });
 
 describe('L21 Box Environment', () => {
     const env1 = makeExtEnv(["a", "b"], [1, 2], theGlobalEnv);
     const env2 = makeExtEnv(["a"], [3], env1);
 
+
+
     it('identifies the environment', () => {
         expect(isEnv(theGlobalEnv)).to.be.true;
         expect(isEnv(env1)).to.be.true;
     });
+
+
 
     it('applies the environment', () => {
         expect(applyEnv(env1, "a")).to.deep.equal(makeOk(1));
         expect(applyEnv(env2, "a")).to.deep.equal(makeOk(3));
         expect(applyEnv(env2, "b")).to.deep.equal(makeOk(2));
     });
+
+
+
 });
 
 describe('L21 Box Eval', () => {
+    
+
+    
     it('mutates the global environment', () => {
         globalEnvAddBinding("m", 1);
         expect(applyEnv(theGlobalEnv, "m")).to.deep.equal(makeOk(1));
     });
+
+
 
     it('evaluates data type literals', () => {
         expect(evalParse("1")).to.deep.equal(makeOk(1));
@@ -57,11 +78,14 @@ describe('L21 Box Eval', () => {
         expect(evalParse('"a"')).to.deep.equal(makeOk("a"));
     });
 
+
+
     describe('Primitive Procedures', () => {
         it('evaluates "+"', () => {
             expect(evalParse("(+ 1 2)")).to.deep.equal(makeOk(3));
         });
 
+        
         it('evaluates "-"', () => {
             expect(evalParse("(- 2 1)")).to.deep.equal(makeOk(1));
         });
@@ -112,21 +136,32 @@ describe('L21 Box Eval', () => {
             expect(evalParse('(string? "a")')).to.deep.equal(makeOk(true));
         });
 
+        console.log(theStore); //DELETE!!!!
+        console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
+
     });
+
+
 
     it('evaluates "define" expressions', () => {
         expect(bind(parseL21("(L21 (define x 1) (+ x x))"), evalProgram)).to.deep.equal(makeOk(2));
         expect(bind(parseL21("(L21 (define x 1) (define y (+ x x)) (* y y))"), evalProgram)).to.deep.equal(makeOk(4));
     });
 
+
+
     it('evaluates "if" expressions', () => {
         expect(evalParse('(if (string? "a") 1 2)')).to.deep.equal(makeOk(1));
         expect(evalParse('(if (not (string? "a")) 1 2)')).to.deep.equal(makeOk(2));
     });
 
+
+
     it('evaluates procedures', () => {
         expect(evalParse("(lambda (x) x)")).to.deep.equal(makeOk(makeClosure([makeVarDecl("x")], [makeVarRef("x")], theGlobalEnv)));
     });
+
+
 
     it('applies procedures', () => {
         expect(evalParse("((lambda (x) (* x x)) 2)")).to.deep.equal(makeOk(4));
@@ -134,9 +169,13 @@ describe('L21 Box Eval', () => {
         expect(bind(parseL21("(L21 (define f (lambda (x) (if (> x 0) x (- 0 x)))) (f -3))"), evalProgram)).to.deep.equal(makeOk(3));
     });
 
+
+
     it('evaluates recursive procedures without "letrec"', () => {
         expect(bind(parseL21("(L21 (define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))) (fact 3))"), evalProgram)).to.deep.equal(makeOk(6));
     });
+
+
 
     it('returns a Failure in "letrec" if a binding is invalid', () => {
         expect(evalParse(`(letrec ((a (1 2))) a)`)).to.satisfy(isFailure);
@@ -156,6 +195,8 @@ describe('L21 Box Eval', () => {
         `
         expect(bind(parseL21(code), evalProgram)).to.deep.equal(makeOk(120));
     });
+
+
 
     it('evaluates the examples', () => {
         // Accidental capture of the z variable if no renaming - works without renaming in env eval.
