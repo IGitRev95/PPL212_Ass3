@@ -27,7 +27,7 @@ export const extendStore = (s: Store, val: Value): Store => {
 
 
 export const applyStore = (store: Store, address: number): Result<Value> => // Complete
-    store.vals.length>address? makeOk(unbox(store.vals[address])) : makeFailure(`non valid address: ${address}`);
+    (store.vals.length>address)&&(address>=0)? makeOk(unbox(store.vals[address])) : makeFailure(`non valid address: ${address}`);
             
 export const setStore = (store: Store, address: number, val: Value): void => setBox(store.vals[address],val) // Complete
     
