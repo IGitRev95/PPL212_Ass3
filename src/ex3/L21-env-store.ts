@@ -19,11 +19,11 @@ export interface Store {
 
 export const isStore = (x: any): x is Store => x.tag === "Store"; // Complete
 export const makeEmptyStore = (): Store => ({tag: "Store", vals: []}); // Complete
-
-const makeNonEmptyStore = (vals: Box<Value>[]): Store => ({tag: "Store", vals: vals}); //ADDED
-
 export const theStore: Store = makeEmptyStore(); // Complete
-export const extendStore = (s: Store, val: Value): Store => makeNonEmptyStore(s.vals.concat([makeBox(val)])); // Complete
+export const extendStore = (s: Store, val: Value): Store => {
+    s.vals=s.vals.concat([makeBox(val)]);
+     return s;
+} // Complete
 
 
 export const applyStore = (store: Store, address: number): Result<Value> => // Complete
@@ -73,7 +73,7 @@ export const applyEnv = (env: Env, v: string): Result<number> =>
 
 const isEmptyGEnv = (env: GlobalEnv): boolean => isEmpty(unbox(env.vars)) //ADDED
 
-const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => // Complete
+const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => // Complete // returns address of v
     isEmptyGEnv(env) ? makeFailure(`empty global env`) :
     unbox(env.vars).includes(v) ? makeOk(unbox(env.addresses)[unbox(env.vars).indexOf(v)]) :
     makeFailure(`var not found in global Env: ${v}`)
