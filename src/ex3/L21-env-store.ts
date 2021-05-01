@@ -1,4 +1,4 @@
-import { add, map, zipWith } from "ramda";
+import { add, isEmpty, map, zipWith } from "ramda";
 import { Value } from './L21-value-store';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
 
@@ -17,18 +17,20 @@ export interface Store {
     vals: Box<Value>[];
 }
 
-export const isStore = ...;
-export const makeEmptyStore = ...;
-export const theStore: Store = 
-export const extendStore = (s: Store, val: Value): Store =>
-    // Complete
-    
-export const applyStore = (store: Store, address: number): Result<Value> =>
-    // Complete
+export const isStore = (x: any): x is Store => x.tag === "Store"; // Complete
+export const makeEmptyStore = (): Store => ({tag: "Store", vals: []}); // Complete
 
+const makeNonEmptyStore = (vals: Box<Value>[]): Store => ({tag: "Store", vals: vals}); //ADDED
+
+export const theStore: Store = makeEmptyStore(); // Complete
+export const extendStore = (s: Store, val: Value): Store => makeNonEmptyStore(s.vals.concat([makeBox(val)])); // Complete
+
+
+export const applyStore = (store: Store, address: number): Result<Value> => // Complete
+    store.vals.length>address? makeOk(unbox(store.vals[address])) : makeFailure(`non valid address: ${address}`);
+            
+export const setStore = (store: Store, address: number, val: Value): void => setBox(store.vals[address],val) // Complete
     
-export const setStore = (store: Store, address: number, val: Value): void => 
-    // Complete
 
 
 // ========================================================
@@ -69,11 +71,22 @@ export const applyEnv = (env: Env, v: string): Result<number> =>
     isGlobalEnv(env) ? applyGlobalEnv(env, v) :
     applyExtEnv(env, v);
 
-const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => 
-    // Complete
+const isEmptyGEnv = (env: GlobalEnv): boolean => isEmpty(unbox(env.vars)) //ADDED
 
-export const globalEnvAddBinding = (v: string, addr: number): void =>
-    // Complete
+const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => // Complete
+    isEmptyGEnv(env) ? makeFailure(`empty global env`) :
+    unbox(env.vars).includes(v) ? makeOk(unbox(env.addresses)[unbox(env.vars).indexOf(v)]) :
+    makeFailure(`var not found in global Env: ${v}`)
+
+export const globalEnvAddBinding = (v: string, addr: number): void => // Complete
+    {
+        setBox(theGlobalEnv.vars,unbox(theGlobalEnv.vars).concat([v]));
+        setBox(theGlobalEnv.addresses,unbox(theGlobalEnv.addresses).concat([addr]));
+    }
+
+// Complete
+   // globalEnvSetFrame(theGlobalEnv,
+     //   extendFrame(unbox(theGlobalEnv.frame), v, val));
 
 const applyExtEnv = (env: ExtEnv, v: string): Result<number> =>
     env.vars.includes(v) ? makeOk(env.addresses[env.vars.indexOf(v)]) :
