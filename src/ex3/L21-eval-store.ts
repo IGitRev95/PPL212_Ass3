@@ -6,12 +6,13 @@ import { map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
          parseL21Exp, DefineExp, isSetExp, SetExp, VarRef} from "./L21-ast";
-import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, /*applyEnvStore,*/ theGlobalEnv, globalEnvAddBinding, theStore, applyStore } from "./L21-env-store";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, /*applyEnvStore,*/ theGlobalEnv, globalEnvAddBinding, theStore, applyStore, isGlobalEnv } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { unbox } from "../shared/box";
 
 // ========================================================
 // Eval functions
@@ -47,11 +48,11 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
     makeFailure(`Bad procedure ${JSON.stringify(proc)}`);
-
+//------------------------------------------TODO-------------------
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
-    const addresses: number[] = []   // changed
-    const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env)
+    const addresses: number[] = isGlobalEnv(proc.env)? unbox(proc.env.addresses) : proc.env.addresses;   // changed
+    const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env) //passing vars and addresses instead of args?
     return evalSequence(proc.body, newEnv);
 }
 
@@ -95,7 +96,7 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vars = map((b: Binding) => b.var.var, exp.bindings);
     
     return bind(vals, (vals: Value[]) => {
-        const addresses = [3] // changed
+        const addresses =  // changed
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
