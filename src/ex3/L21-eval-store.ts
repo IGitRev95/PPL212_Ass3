@@ -12,7 +12,6 @@ import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, isOk } from "../shared/result";
 import { parse as p } from "../shared/parser";
-import { unbox } from "../shared/box";
 
 // ========================================================
 // Eval functions
@@ -22,7 +21,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isStrExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
-    isVarRef(exp) ? evalVarRef(exp, env) : //copleted
+    isVarRef(exp) ? evalVarRef(exp, env) : // Self handled
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
@@ -49,10 +48,14 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isClosure(proc) ? applyClosure(proc, args) :
     makeFailure(`Bad procedure ${JSON.stringify(proc)}`);
 
-const applyClosure = (proc: Closure, args: Value[]): Result<Value> => { // complete
+const applyClosure = (proc: Closure, args: Value[]): Result<Value> => { // Self handled
+    /*
+    maping the local vars names to an string[] and the give argument values to a store addresses array,
+    the compination of both is the Env extetion for the local closure evaluation.
+    values (args) => store => addressnumber[] => ExtEnv
+    */
     const vars = map((v: VarDecl) => v.var, proc.params);
-    //values (args) => store => addressnumber[] => ExtEnv
-    const addresses: number[] = map((val: Value)=>addValueToTheStore(val),args); // changed
+    const addresses: number[] = map((val: Value)=>addValueToTheStore(val),args);
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env) 
     return evalSequence(proc.body, newEnv);
 }
@@ -67,15 +70,13 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) && isEmpty(rest) ? applicativeEval(first, env) :
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
     first;
-//------------------------------------------TODO-------------------
-const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // complete
-    //isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
+
+const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // Self handled
     bind(applicativeEval(def.val, theGlobalEnv),
-            (rhs: Value) => {   
-                                //console.log(theStore); //DELETE!!!!
-                                //console.log(JSON.stringify(theStore,null,2)); //DELETE!!!!
-                                //console.log(theGlobalEnv); //DELETE!!!!
-                                //console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
+            (rhs: Value) => {   /* 
+                                    define only occurs in global env so the computed value will be added to the store
+                                    and the var name and store address will be added to the global env.
+                                */
                                 globalEnvAddBinding(def.var.var,addValueToTheStore(rhs));
                                 return evalSequence(exps, theGlobalEnv);
                             })   
@@ -98,14 +99,19 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vars = map((b: Binding) => b.var.var, exp.bindings);
     
     return bind(vals, (vals: Value[]) => {
-        const addresses =  map((val: Value)=>addValueToTheStore(val),vals); // changed
+        /* same as clouse:
+        first dealing with the local binding of the letExp
+        then add the local binding valus to the store
+        and use the recived addresses to extend the current env. 
+        */
+        const addresses =  map((val: Value)=>addValueToTheStore(val),vals);
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
 }
 
-const  evalSet = (exp: SetExp,env: Env): Result<void> => //makeFailure("evalSet is not complete") // complete? -> not Tested
+const  evalSet = (exp: SetExp,env: Env): Result<void> => // Self handled
     safe2((address: number, val: Value)=>makeOk(setStore(theStore,address,val)))(applyEnv(env,exp.var.var),applicativeEval(exp.val,env))
 
-const evalVarRef = (exp: VarRef,env: Env): Result<Value> =>
+const evalVarRef = (exp: VarRef,env: Env): Result<Value> => // Self handled
     bind(applyEnv(env,exp.var),(address: number)=>applyStore(theStore,address))

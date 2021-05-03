@@ -31,7 +31,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     makeFailure("Bad primitive op " + proc.op);
 
 const minusPrim = (args: Value[]): Result<number> => {
-    // TODO complete
+    // Self handled
     const x = args[0], y = args[1];
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x - y);
@@ -41,7 +41,7 @@ const minusPrim = (args: Value[]): Result<number> => {
 }
 
 const divPrim = (args: Value[]): Result<number> => {
-    // TODO complete
+    // Self handled
     const x = args[0], y = args[1];
     if (isNumber(x) && isNumber(y)) {
         return makeOk(x / y);

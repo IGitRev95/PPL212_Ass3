@@ -17,20 +17,21 @@ export interface Store {
     vals: Box<Value>[];
 }
 
-export const isStore = (x: any): x is Store => x.tag === "Store"; // Complete
-export const makeEmptyStore = (): Store => ({tag: "Store", vals: []}); // Complete
-export const theStore: Store = makeEmptyStore(); // Complete
+export const isStore = (x: any): x is Store => x.tag === "Store"; // Self handled
+export const makeEmptyStore = (): Store => ({tag: "Store", vals: []}); // Self handled
+export const theStore: Store = makeEmptyStore(); // Self handled
 export const extendStore = (s: Store, val: Value): Store => {
     s.vals=concat(s.vals,[makeBox(val)]);
      return s;
-} // Complete
+} // Self handled
 
-export const addValueToTheStore = (val: Value): number => extendStore(theStore,val).vals.length-1
+export const addValueToTheStore = (val: Value): number => extendStore(theStore,val).vals.length-1 
+// store extention is adding value to the end of array so the added value address is the last inxdex
 
-export const applyStore = (store: Store, address: number): Result<Value> => // Complete
+export const applyStore = (store: Store, address: number): Result<Value> => // Self handled
     (store.vals.length>address)&&(address>=0)? makeOk(unbox(store.vals[address])) : makeFailure(`non valid address: ${address}`);
             
-export const setStore = (store: Store, address: number, val: Value): void => setBox(store.vals[address],val) // Complete
+export const setStore = (store: Store, address: number, val: Value): void => setBox(store.vals[address],val) // Self handled
     
 
 
@@ -74,12 +75,12 @@ export const applyEnv = (env: Env, v: string): Result<number> =>
 
 const isEmptyGEnv = (env: GlobalEnv): boolean => isEmpty(unbox(env.vars)) //ADDED
 
-const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => // Complete // returns address of v
+const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => // Self handled - returns the store address of the value of v'
     isEmptyGEnv(env) ? makeFailure(`empty global env`) :
     unbox(env.vars).includes(v) ? makeOk(unbox(env.addresses)[unbox(env.vars).indexOf(v)]) :
     makeFailure(`var not found in global Env: ${v}`)
 
-export const globalEnvAddBinding = (v: string, addr: number): void => // Complete
+export const globalEnvAddBinding = (v: string, addr: number): void => // Self handled
     {
         setBox(theGlobalEnv.vars,unbox(theGlobalEnv.vars).concat([v]));
         setBox(theGlobalEnv.addresses,unbox(theGlobalEnv.addresses).concat([addr]));

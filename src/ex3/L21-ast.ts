@@ -34,7 +34,7 @@ import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToStri
 ;;         |  ( quote <sexp> )                / LitExp(val:SExp)
 ;;         |  ( <cexp> <cexp>* )              / AppExp(operator:CExp, operands:CExp[]))
 
-           |  ( set! <var> <cexp>)            / SetExp(var: varRef, val: CExp)             #### L4 //added
+           |  ( set! <var> <cexp>)            / SetExp(var: varRef, val: CExp)            //added
 
 ;; <binding>  ::= ( <var> <cexp> )            / Binding(var:VarDecl, val:Cexp)
 ;; <prim-op>  ::= + | - | * | / | < | > | = | not |  eq? | string=?
@@ -257,13 +257,13 @@ const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> =>
     safe2((bindings: Binding[], body: CExp[]) => makeOk(makeLetExp(bindings, body)))
         (parseBindings(bindings), mapResult(parseL21CExp, body));
 
-const parseSetExp = (params: Sexp[]): Result<SetExp> => //!!
+const parseSetExp = (params: Sexp[]): Result<SetExp> => 
         isEmpty(params) ? makeFailure("set! missing 2 arguments") :
         isEmpty(rest(params)) ? makeFailure("set! missing 1 argument") :
         ! isEmpty(rest(rest(params))) ? makeFailure("set! has too many arguments") :
         parseGoodSetExp(first(params), second(params));
     
-const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> => //!!
+const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> => 
         ! isIdentifier(variable) ? makeFailure("First arg of set! must be an identifier") :
         bind(parseL21CExp(val), (val: CExp) => makeOk(makeSetExp(makeVarRef(variable), val)));
 
