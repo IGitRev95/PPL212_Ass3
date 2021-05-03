@@ -1,4 +1,4 @@
-import { add, isEmpty, map, zipWith } from "ramda";
+import { add, concat, isEmpty, map, zipWith } from "ramda";
 import { Value } from './L21-value-store';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
 
@@ -21,7 +21,7 @@ export const isStore = (x: any): x is Store => x.tag === "Store"; // Complete
 export const makeEmptyStore = (): Store => ({tag: "Store", vals: []}); // Complete
 export const theStore: Store = makeEmptyStore(); // Complete
 export const extendStore = (s: Store, val: Value): Store => {
-    s.vals=s.vals.concat([makeBox(val)]);
+    s.vals=concat(s.vals,[makeBox(val)]);
      return s;
 } // Complete
 

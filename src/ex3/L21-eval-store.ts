@@ -51,7 +51,8 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 //------------------------------------------TODO-------------------
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
-    const addresses: number[] = isGlobalEnv(proc.env)? unbox(proc.env.addresses) : proc.env.addresses;   // changed
+    //values (args) => store => addressnumber[] => ExtEnv
+    const addresses: number[] = [6]; // changed
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env) //passing vars and addresses instead of args?
     return evalSequence(proc.body, newEnv);
 }
@@ -66,14 +67,14 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) && isEmpty(rest) ? applicativeEval(first, env) :
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
     first;
-
+//------------------------------------------TODO-------------------
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // complete
     isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
     bind(applicativeEval(def.val, theGlobalEnv),
             (rhs: Value) => {   
                                 //console.log(theStore); //DELETE!!!!
                                 //console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
-                                extendStore(theStore,rhs);
+                                extendStore(theStore,rhs);//!
                                 globalEnvAddBinding(def.var.var, theStore.vals.length -1);
                                 return evalSequence(exps, theGlobalEnv);
                             })   
