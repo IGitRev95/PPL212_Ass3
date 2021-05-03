@@ -25,6 +25,7 @@ export const extendStore = (s: Store, val: Value): Store => {
      return s;
 } // Complete
 
+export const addValueToTheStore = (val: Value): number => extendStore(theStore,val).vals.length-1
 
 export const applyStore = (store: Store, address: number): Result<Value> => // Complete
     (store.vals.length>address)&&(address>=0)? makeOk(unbox(store.vals[address])) : makeFailure(`non valid address: ${address}`);
@@ -83,10 +84,6 @@ export const globalEnvAddBinding = (v: string, addr: number): void => // Complet
         setBox(theGlobalEnv.vars,unbox(theGlobalEnv.vars).concat([v]));
         setBox(theGlobalEnv.addresses,unbox(theGlobalEnv.addresses).concat([addr]));
     }
-
-// Complete
-   // globalEnvSetFrame(theGlobalEnv,
-     //   extendFrame(unbox(theGlobalEnv.frame), v, val));
 
 const applyExtEnv = (env: ExtEnv, v: string): Result<number> =>
     env.vars.includes(v) ? makeOk(env.addresses[env.vars.indexOf(v)]) :

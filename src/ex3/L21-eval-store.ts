@@ -6,7 +6,7 @@ import { map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
          parseL21Exp, DefineExp, isSetExp, SetExp, VarRef} from "./L21-ast";
-import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, /*applyEnvStore,*/ theGlobalEnv, globalEnvAddBinding, theStore, applyStore, isGlobalEnv } from "./L21-env-store";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, /*applyEnvStore,*/ theGlobalEnv, globalEnvAddBinding, theStore, applyStore, isGlobalEnv, addValueToTheStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
@@ -48,12 +48,12 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args) :
     makeFailure(`Bad procedure ${JSON.stringify(proc)}`);
-//------------------------------------------TODO-------------------
-const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
+
+const applyClosure = (proc: Closure, args: Value[]): Result<Value> => { // complete
     const vars = map((v: VarDecl) => v.var, proc.params);
     //values (args) => store => addressnumber[] => ExtEnv
-    const addresses: number[] = [6]; // changed
-    const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env) //passing vars and addresses instead of args?
+    const addresses: number[] = map((val: Value)=>addValueToTheStore(val),args); // changed
+    const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env) 
     return evalSequence(proc.body, newEnv);
 }
 
@@ -69,13 +69,14 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     first;
 //------------------------------------------TODO-------------------
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => // complete
-    isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
+    //isOk(applyEnv(theGlobalEnv,def.var.var))? makeFailure(`var name already in use: ${def.var.var}`) : //check that the var name has not been used yet
     bind(applicativeEval(def.val, theGlobalEnv),
             (rhs: Value) => {   
                                 //console.log(theStore); //DELETE!!!!
+                                //console.log(JSON.stringify(theStore,null,2)); //DELETE!!!!
+                                //console.log(theGlobalEnv); //DELETE!!!!
                                 //console.log(JSON.stringify(theGlobalEnv,null,2)); //DELETE!!!!
-                                extendStore(theStore,rhs);//!
-                                globalEnvAddBinding(def.var.var, theStore.vals.length -1);
+                                globalEnvAddBinding(def.var.var,addValueToTheStore(rhs));
                                 return evalSequence(exps, theGlobalEnv);
                             })   
 
@@ -97,7 +98,7 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vars = map((b: Binding) => b.var.var, exp.bindings);
     
     return bind(vals, (vals: Value[]) => {
-        const addresses =  // changed
+        const addresses =  map((val: Value)=>addValueToTheStore(val),vals); // changed
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
